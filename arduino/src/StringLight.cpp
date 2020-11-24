@@ -30,8 +30,7 @@ void StringLight::sendPulse(int numPulses, int pulseTimeMicros) const {
  */
 void StringLight::start() {
     pinMode(pin, OUTPUT);
-    digitalWrite(pin, HIGH);
-    delay(2000);
+    turnOn();
     currentColor = WHITE;
 }
 
@@ -186,6 +185,9 @@ void StringLight::turnOff() {
 }
 
 void StringLight::turnOn() {
+    digitalWrite(pin, HIGH);
+    delay(1);
+    currentColor = WHITE;
     lightsOn = true;
 }
 

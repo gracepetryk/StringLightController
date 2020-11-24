@@ -116,10 +116,6 @@ private:
     bool async = false;
 
     int lightMode = MODE_SOLID;
-public:
-
-private:
-
     /**
      * sends pulses until light is set to color specified
      */

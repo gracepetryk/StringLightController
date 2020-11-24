@@ -1,7 +1,8 @@
 #include <Arduino.h>
 #include "StringLight.h"
-#define LED_PIN 5
-#define BUTTON_PIN  3
+#define LED_PIN 3
+#define BUTTON_PIN  A5
+#define DEBOUNCE_TIME 200
 
 // bytes for setting the light mode over serial, the rest of the mode definitions are set in StringLight
 #define MODE_LISTEN 0
@@ -16,11 +17,6 @@
 
 bool async = false;
 StringLight stringLight = StringLight(LED_PIN);
-
-// starting colors
-int red = 255;
-int green = 0;
-int blue = 150;
 
 /**
  * listens for serial input to control lights
@@ -80,29 +76,32 @@ void setup() {
     Serial.begin(9600);
     pinMode(BUTTON_PIN, INPUT_PULLUP);
     stringLight.start();
-    stringLight.setColorRGB(red, green, blue);
     digitalWrite(LED_PIN, HIGH);
 
-    stringLight.setColorRGB(255, 50, 0);
+    stringLight.setColorRGB(255, 0, 0);
 }
 
 bool buttonPressed = false;
+unsigned long debounceTimer = millis();
 void loop() {
-    controlOverSerial();
+    //controlOverSerial();
     stringLight.loopLight();
 
-    if (digitalRead(BUTTON_PIN) == HIGH && !buttonPressed) {
+
+    if (digitalRead(BUTTON_PIN) == LOW && !buttonPressed) {
+        debounceTimer = millis();
         if (stringLight.isOn()) {
             stringLight.turnOff();
         } else {
             stringLight.turnOn();
         }
-        digitalWrite(LED_PIN, LOW);
         buttonPressed = true;
     }
 
-    if (digitalRead(BUTTON_PIN) == LOW) {
-        buttonPressed = false;
+    if (digitalRead(BUTTON_PIN) == HIGH) {
+        if (millis() - debounceTimer > DEBOUNCE_TIME) {
+            buttonPressed = false;
+        }
     }
 }
 
