@@ -60,12 +60,14 @@ void controlOverSerial() {
             }
         } else if (readMode == MODE_SET_COLOR) {
             // read next 3 bytes to set color
-            if (currentColor < 3) {
-                colors[currentColor] = readByte;
-            } else {
+            colors[currentColor] = readByte;
+            if (currentColor == 2) {
+                // last color
                 stringLight.setColorRGB(colors[0], colors[1], colors[2]);
                 currentColor = 0;
-                readMode = MODE_SET_COLOR;
+                readMode = MODE_LISTEN;
+            } else {
+                currentColor++;
             }
         }
     }
@@ -75,18 +77,14 @@ void controlOverSerial() {
 void setup() {
     Serial.begin(9600);
     pinMode(BUTTON_PIN, INPUT_PULLUP);
-    stringLight.start();
-    digitalWrite(LED_PIN, HIGH);
-
-    stringLight.setColorRGB(255, 0, 0);
+    stringLight.start(false);
 }
 
 bool buttonPressed = false;
 unsigned long debounceTimer = millis();
 void loop() {
-    //controlOverSerial();
+    controlOverSerial();
     stringLight.loopLight();
-
 
     if (digitalRead(BUTTON_PIN) == LOW && !buttonPressed) {
         debounceTimer = millis();

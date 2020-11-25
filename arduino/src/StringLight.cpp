@@ -28,9 +28,9 @@ void StringLight::sendPulse(int numPulses, int pulseTimeMicros) const {
 /**
  * initializes the string lights
  */
-void StringLight::start() {
+void StringLight::start(bool startOn) {
     pinMode(pin, OUTPUT);
-    turnOn();
+    startOn ? turnOn() : turnOff();
     currentColor = WHITE;
 }
 
@@ -163,6 +163,7 @@ bool StringLight::setMode(int id) {
         case MODE_FADE_ASYNC:
         case MODE_JUMP_ASYNC:
             startAsync();
+            break;
         default:
             return false;
     }

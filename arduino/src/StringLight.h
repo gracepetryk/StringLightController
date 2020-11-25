@@ -30,7 +30,7 @@ class StringLight {
 public:
     explicit StringLight(int pin);
 
-    void start();
+    void start(bool startOn);
 
     /**
      * sets the color of the lights
@@ -94,17 +94,17 @@ private:
 
     bool lightsOn = true;
 
-    int currentColor = 0;
-    int redDelay = 0;
-    int greenDelay = 0;
-    int blueDelay = 0;
+    int currentColor = WHITE;
+    int redDelay = 50;
+    int greenDelay = 50;
+    int blueDelay = 50;
 
     /**
      * used for timing operations for certain light modes, reset frequently
      */
     unsigned long timer = 0;
 
-    int jumpSpeed = 100; // interval in ms for jump modes
+    int jumpSpeed = 750; // interval in ms for jump modes
     int fadeSpeed = 50; // interval in ms for fade modes
 
     // variables for managing fade modes
