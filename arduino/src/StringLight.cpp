@@ -187,7 +187,7 @@ void StringLight::turnOff() {
 
 void StringLight::turnOn() {
     digitalWrite(pin, HIGH);
-    delay(1);
+    delay(10);
     currentColor = WHITE;
     lightsOn = true;
 }
