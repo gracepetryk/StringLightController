@@ -2,7 +2,7 @@
 
 import serial
 import time
-import glob
+import subprocess
 
 # define communication bytes
 ON_BYTE = 0xFF
@@ -20,20 +20,63 @@ MODE_FADE_ASYNC_BYTE = 0x04
 MODE_USER_BYTE = 0x06
 
 
-ser = serial.Serial('/dev/ttyUSB0', 9600)
-time.sleep(2) # give arduino time to init
+class LightControl:
 
+    def __init__(self):
+        # find arduino serial bit
+        dev_list = subprocess.run(["ls", "/dev"], capture_output=True)
+        dev_list = str(dev_list.stdout).split("\\n")
+        serial_port = "/dev/" + [res for res in dev_list if "ttyUSB" in res][0]
 
-command = bytearray()
-command.append(ON_BYTE)
-command.append(MODE_SOLID_BYTE)
-command.append(SET_COLOR_BYTE)
-command.append(0xFF)
-command.append(0x00)
-command.append(0xFF)
+        # open serial port and define command object
+        self.ser = serial.Serial(serial_port, 9600)
+        self.command = bytearray()
 
-ser.write(command)
+        # get current mode
+        self.command.append(GET_MODE_BYTE)
+        res = self._send_command()
+        self.current_mode = res[GET_MODE_BYTE]
 
-time.sleep(0.1)
-while ser.in_waiting:
-    print(ser.read())
+    def _send_command(self):
+        self.ser.reset_input_buffer()
+        self.ser.write(self.command)
+
+        time.sleep(0.1)
+
+        status_dict = {}
+        current_command = 0
+        while self.ser.in_waiting > 0:
+            status_dict[self.command[current_command]] = self.ser.read()
+            current_command += 1
+        return status_dict
+
+    def _clear_command(self):
+        self.command.clear()
+
+    def set_mode(self, mode_byte):
+        self._clear_command()
+        self.command.append(mode_byte)
+        self._send_command()
+        self.current_mode = mode_byte
+
+    def turn_on(self):
+        self._clear_command()
+        self.command.append(ON_BYTE)
+        self._send_command()
+
+    def turn_off(self):
+        self._clear_command()
+        self.command.append(OFF_BYTE)
+        self._send_command()
+
+    def set_color(self, r, g, b):
+        self._clear_command()
+
+        if self.current_mode != MODE_SOLID_BYTE:
+            self.set_mode(MODE_SOLID_BYTE)
+
+        self.command.append(SET_COLOR_BYTE)
+        self.command.append(r)
+        self.command.append(g)
+        self.command.append(b)
+        self._send_command()
