@@ -26,5 +26,33 @@ def set_color():
     return Response("set color to {}, {}, {}".format(r, g, b), status=200)
 
 
+@app.route("/mode_solid")
+def mode_solid():
+    lc.set_mode(lc.MODE_SOLID_BYTE)
+    return Response("Set mode to solid", status=200)
 
+
+@app.route("/mode_fade")
+def mode_fade():
+    lc.set_mode(lc.MODE_FADE_BYTE)
+    return Response("Set mode to fade", status=200)
+
+
+@app.route("/mode_jump")
+def mode_jump():
+    lc.set_mode(lc.MODE_JUMP_BYTE)
+    return Response("Set mode to jump", status=200)
+
+
+@app.route("/mode_fade_async")
+def mode_fade_async():
+    lc.set_mode(lc.MODE_FADE_ASYNC_BYTE)
+    return Response("Set mode to async fade", status=200)
+
+
+
+@app.route("/mode_jump_async")
+def mode_jump_async():
+    lc.set_mode(lc.MODE_JUMP_ASYNC_BYTE)
+    return Response("Set mode to async jump", status=200)
 
