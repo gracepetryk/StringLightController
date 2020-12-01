@@ -30,6 +30,7 @@ void StringLight::sendPulse(int numPulses, int pulseTimeMicros) const {
  */
 void StringLight::start(bool startOn) {
     pinMode(pin, OUTPUT);
+    setColorRGB(150, 150, 150);
     startOn ? turnOn() : turnOff();
     currentColor = WHITE;
 }
@@ -181,15 +182,23 @@ bool StringLight::isAsync() const {
 }
 
 void StringLight::turnOff() {
-    digitalWrite(pin, LOW);
-    lightsOn = false;
+    if (isOn()) {
+        digitalWrite(pin, LOW);
+        lightsOn = false;
+    }
 }
 
 void StringLight::turnOn() {
-    digitalWrite(pin, HIGH);
-    delay(10);
-    currentColor = WHITE;
-    lightsOn = true;
+    if (!isOn()) {
+        digitalWrite(pin, HIGH);
+        delay(10);
+        currentColor = WHITE;
+        if (isAsync()) {
+            async = false; // lost async when turning off
+            startAsync();
+        }
+        lightsOn = true;
+    }
 }
 
 bool StringLight::isOn() const {

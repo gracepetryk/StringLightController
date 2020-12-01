@@ -45,13 +45,11 @@ void controlOverSerial() {
                     break;
                 case GET_MODE_BYTE:
                     // acknowledge and send the current mode over serial
-                    Serial.write(ACK_BYTE);
                     Serial.write(stringLight.getMode());
                     break;
                 case GET_ON_OFF_BYTE:
                     // acknowledge and send the current on/off state over serial
-                    Serial.write(ACK_BYTE);
-                    Serial.write(stringLight.getMode() ? 0xFF : 0x00);
+                    Serial.write(stringLight.isOn() ? 0xFF : 0x00);
                     break;
                 default:
                     bool success = stringLight.setMode(readByte);

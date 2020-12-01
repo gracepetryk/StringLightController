@@ -126,7 +126,7 @@ private:
     * send pulses to the LEDs without setting the proper mode first. This ensures that we can always keep track of
     * what the current color is
     */
-    void sendPulseInternal(int numPulses=1, int pulseTimeMicros=5) const;
+    void sendPulseInternal(int numPulses=1, int pulseTimeMicros=50) const;
 };
 
 
