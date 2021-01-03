@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <ImageView
+        android:id="@+id/colorWheelView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintDimensionRatio="w,1:1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:srcCompat="@tools:sample/avatars" />
+
+    <EditText
+        android:id="@+id/rColorInput"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:hint="175"
+        android:importantForAutofill="no"
+        android:inputType="number"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        app:layout_constrainedWidth="false"
+        app:layout_constraintEnd_toStartOf="@+id/gColorInput"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintHorizontal_chainStyle="spread_inside"
+        app:layout_constraintStart_toEndOf="@+id/colorPreviewView"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_max="100dp" />
+
+    <EditText
+        android:id="@+id/bColorInput"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:ems="10"
+        android:hint="175"
+        android:importantForAutofill="no"
+        android:inputType="number"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        app:layout_constrainedWidth="false"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/gColorInput"
+        app:layout_constraintTop_toTopOf="@+id/gColorInput"
+        app:layout_constraintWidth_max="100dp" />
+
+    <EditText
+        android:id="@+id/gColorInput"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="175"
+        android:importantForAutofill="no"
+        android:inputType="number"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        app:layout_constrainedWidth="false"
+        app:layout_constraintEnd_toStartOf="@+id/bColorInput"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/rColorInput"
+        app:layout_constraintTop_toTopOf="@+id/rColorInput"
+        app:layout_constraintWidth_max="100dp" />
+
+    <TextView
+        android:id="@+id/rInputLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="R"
+        android:textAlignment="center"
+        app:layout_constraintEnd_toEndOf="@+id/rColorInput"
+        app:layout_constraintStart_toStartOf="@+id/rColorInput"
+        app:layout_constraintTop_toBottomOf="@+id/rColorInput" />
+
+    <TextView
+        android:id="@+id/gInputLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="G"
+        android:textAlignment="center"
+        app:layout_constraintEnd_toEndOf="@+id/gColorInput"
+        app:layout_constraintStart_toStartOf="@+id/gColorInput"
+        app:layout_constraintTop_toBottomOf="@+id/gColorInput" />
+
+    <TextView
+        android:id="@+id/bInputLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="B"
+        android:textAlignment="center"
+        app:layout_constraintEnd_toEndOf="@+id/bColorInput"
+        app:layout_constraintStart_toStartOf="@+id/bColorInput"
+        app:layout_constraintTop_toBottomOf="@+id/bColorInput" />
+
+    <ImageView
+        android:id="@+id/colorPreviewView"
+        android:layout_width="30dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/colorWheelView"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
