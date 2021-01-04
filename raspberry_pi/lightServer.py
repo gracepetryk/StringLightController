@@ -6,15 +6,20 @@ lc = LightControl()
 
 
 @app.route('/on')
-def turnOn():
+def turn_on():
     lc.turn_on()
     return Response("On", status=200)
 
 
 @app.route('/off')
-def turnOff():
+def turn_off():
     lc.turn_off()
     return Response("Off", status=200)
+
+
+@app.route("/powerstate")
+def get_power_state():
+    return Response(str(lc.get_on_off() == b'\xFF'), status=200)
 
 
 @app.route("/setcolor")
@@ -48,7 +53,6 @@ def mode_jump():
 def mode_fade_async():
     lc.set_mode(lc.MODE_FADE_ASYNC_BYTE)
     return Response("Set mode to async fade", status=200)
-
 
 
 @app.route("/mode_jump_async")

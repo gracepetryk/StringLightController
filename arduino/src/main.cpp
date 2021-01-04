@@ -76,6 +76,7 @@ void setup() {
     Serial.begin(9600);
     pinMode(BUTTON_PIN, INPUT_PULLUP);
     stringLight.start(false);
+    stringLight.setMode(MODE_FADE);
 }
 
 bool buttonPressed = false;
