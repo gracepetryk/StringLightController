@@ -36,6 +36,10 @@ void StringLight::start(bool startOn) {
 }
 
 void StringLight::setColorRGB(int r, int g, int b) {
+    currentR = r;
+    currentG = g;
+    currentB = b;
+
     redDelay = r * INCREMENT_TIME;
     greenDelay = g * INCREMENT_TIME;
     blueDelay = b * INCREMENT_TIME;
@@ -93,29 +97,36 @@ void StringLight::loopLight() {
 
         case MODE_FADE_ASYNC:
         case MODE_FADE:
-            // display current color
-            digitalWrite(pin, HIGH);
-            delayMicroseconds(fade_currentPulseTime);
+            setColor(RED);
+            delayMicroseconds(redDelay);
 
-            // display next color
-            selectNextColorSkippingOff();
-            delayMicroseconds(fade_nextPulseTime);
-            selectNextColorSkippingOff(6); // go back to current color
+            setColor(GREEN);
+            delayMicroseconds(greenDelay);
+
+            setColor(BLUE);
+            delayMicroseconds(blueDelay);
 
             if (millis() - timer > fadeSpeed) {
                 timer = millis();
-                if (fade_nextPulseTime >= fade_maxPulseTime) {
-                    selectNextColorSkippingOff();
-                    fade_currentPulseTime = fade_nextPulseTime;
-                    fade_nextPulseTime = 0;
+                if (currentR == 255 && currentG < 255 && currentB == 0) {
+                    // red to yellow
+                    currentG++;
+                } else if (currentR > 0 && currentG == 255 && currentB == 0) {
+                    // yellow to green
+                    currentR--;
+                } else if (currentR == 0 && currentG == 255 && currentB < 255) {
+                    // green to cyan
+                    currentB++;
+                } else if (currentR == 0 && currentG > 0 && currentB == 255) {
+                    // cyan to blue
+                    currentG--;
+                } else if (currentR < 255 && currentG == 0 && currentB == 255) {
+                    //blue to magenta
+                    currentR++;
+                } else if (currentR == 255 && currentG == 0 && currentB > 0) {
+                    // magenta to red
+                    currentB--;
                 }
-
-                if (fade_currentPulseTime > fade_step) {
-                    // don't allow negative time
-                    fade_currentPulseTime -= fade_step;
-                }
-
-                fade_nextPulseTime += fade_step;
             }
         default:
             break;
@@ -156,8 +167,9 @@ bool StringLight::setMode(int id) {
     }
 
     switch (id) {
-        case MODE_SOLID:
         case MODE_FADE:
+            setColorRGB(255, 0, 0);
+        case MODE_SOLID:
         case MODE_JUMP:
             stopAsync();
             break;

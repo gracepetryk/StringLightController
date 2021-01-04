@@ -98,6 +98,9 @@ private:
     int redDelay = 50;
     int greenDelay = 50;
     int blueDelay = 50;
+    int currentR = 255;
+    int currentG = 255;
+    int currentB = 255;
 
     /**
      * used for timing operations for certain light modes, reset frequently
@@ -105,7 +108,7 @@ private:
     unsigned long timer = 0;
 
     int jumpSpeed = 750; // interval in ms for jump modes
-    int fadeSpeed = 50; // interval in ms for fade modes
+    int fadeSpeed = 10; // interval in ms for fade modes
 
     // variables for managing fade modes
     int fade_currentPulseTime = 6000;
