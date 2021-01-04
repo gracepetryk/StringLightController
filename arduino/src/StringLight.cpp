@@ -127,6 +127,7 @@ void StringLight::loopLight() {
                     // magenta to red
                     currentB--;
                 }
+                setColorRGB(currentR, currentG, currentB);
             }
         default:
             break;
