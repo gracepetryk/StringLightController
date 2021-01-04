@@ -69,6 +69,17 @@ void StringLight::selectNextColorSkippingOff(int numSkips) {
     }
 }
 
+void StringLight::loopRGB() {
+    setColor(RED);
+    delayMicroseconds(redDelay);
+
+    setColor(GREEN);
+    delayMicroseconds(greenDelay);
+
+    setColor(BLUE);
+    delayMicroseconds(blueDelay);
+}
+
 void StringLight::loopLight() {
     if (!lightsOn) {
         digitalWrite(pin, LOW);
@@ -77,14 +88,7 @@ void StringLight::loopLight() {
 
     switch (lightMode) {
         case MODE_SOLID:
-            setColor(RED);
-            delayMicroseconds(redDelay);
-
-            setColor(GREEN);
-            delayMicroseconds(greenDelay);
-
-            setColor(BLUE);
-            delayMicroseconds(blueDelay);
+            loopRGB();
             break;
 
         case MODE_JUMP_ASYNC:
@@ -97,14 +101,7 @@ void StringLight::loopLight() {
 
         case MODE_FADE_ASYNC:
         case MODE_FADE:
-            setColor(RED);
-            delayMicroseconds(redDelay);
-
-            setColor(GREEN);
-            delayMicroseconds(greenDelay);
-
-            setColor(BLUE);
-            delayMicroseconds(blueDelay);
+            loopRGB();
 
             if (millis() - timer > fadeSpeed) {
                 timer = millis();

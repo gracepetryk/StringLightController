@@ -130,6 +130,8 @@ private:
     * what the current color is
     */
     void sendPulseInternal(int numPulses=1, int pulseTimeMicros=50) const;
+
+    void loopRGB();
 };
 
 
