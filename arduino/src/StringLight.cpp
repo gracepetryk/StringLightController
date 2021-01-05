@@ -123,6 +123,16 @@ void StringLight::loopLight() {
                 } else if (currentR == 255 && currentG == 0 && currentB > 0) {
                     // magenta to red
                     currentB--;
+                } else {
+                    // color is not on edge of color wheel, subtract lowest color until it is
+                    int lowestColor = min(currentR, min(currentG, currentB));
+                    if (currentR == lowestColor) {
+                        currentR--;
+                    } else if (currentG == lowestColor) {
+                        currentG--;
+                    } else {
+                        currentB--;
+                    }
                 }
                 setColorRGB(currentR, currentG, currentB);
             }
@@ -146,9 +156,9 @@ void StringLight::stopAsync() {
     if (!isAsync()) return;
 
     digitalWrite(pin, LOW);
-    delay(1000);
+    delay(100);
     digitalWrite(pin, HIGH);
-    delay(1000);
+    delay(10);
     async = false;
     currentColor = WHITE;
 }
@@ -166,7 +176,6 @@ bool StringLight::setMode(int id) {
 
     switch (id) {
         case MODE_FADE:
-            setColorRGB(255, 0, 0);
         case MODE_SOLID:
         case MODE_JUMP:
             stopAsync();
