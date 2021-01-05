@@ -30,6 +30,10 @@ class StringLight {
 public:
     explicit StringLight(int pin);
 
+    /**
+     * Initialize the lights, must be called in setup() before lights will function
+     * @param startOn whether or not to turn on the lights at startup
+     */
     void start(bool startOn);
 
     /**
@@ -60,9 +64,9 @@ public:
      */
     void stopAsync();
 
-    void turnOff();
-
     void turnOn();
+
+    void turnOff();
 
     bool isOn() const;
 
@@ -81,10 +85,14 @@ public:
      * @id MODE_FADE_ASYNC: same as MODE_FADE but each light is a different color
      */
     bool setMode(int id);
+
     int getMode() const;
 
     bool isAsync() const;
 
+    float getFadeSpeed() const;
+
+    void setFadeSpeed(float fadeSpeed);
 
 private:
 
@@ -95,12 +103,18 @@ private:
     bool lightsOn = true;
 
     int currentColor = WHITE;
-    int redDelay = 50;
-    int greenDelay = 50;
-    int blueDelay = 50;
+
     int currentR = 255;
     int currentG = 255;
     int currentB = 255;
+
+    // timing delays for setting an rgb color, initialized on startup
+    int redDelay = 0;
+    int greenDelay = 0;
+    int blueDelay = 0;
+
+    // keeps track of initialization state of lights
+    bool isStarted = false;
 
     /**
      * used for timing operations for certain light modes, reset frequently
@@ -108,21 +122,18 @@ private:
     unsigned long timer = 0;
 
     int jumpSpeed = 750; // interval in ms for jump modes
-    int fadeSpeed = 10; // interval in ms for fade modes
-
-    // variables for managing fade modes
-    int fade_currentPulseTime = 6000;
-    int fade_nextPulseTime = 0;
-    int fade_step = 100;
-    int fade_maxPulseTime = 6000;
+    float fadeSpeed = 10; // speed of the fade mode, expressed in degrees/sec
+    int fadeSpeedMillis = (int) (1000 / fadeSpeed); // fade speed expressed in ms/deg
 
     bool async = false;
 
     int lightMode = MODE_SOLID;
+
     /**
      * sends pulses until light is set to color specified
      */
      void setColor(int color);
+
 
     /**
     * sends a pulse to the led, pulse functionality is broken out into this private method so that a client cannot
@@ -130,6 +141,13 @@ private:
     * what the current color is
     */
     void sendPulseInternal(int numPulses=1, int pulseTimeMicros=50) const;
+
+
+    /**
+     * sets the color of the lights, private function for faster updating the color in a loop when doing direct manipulation
+     * on currentR, currentG, amd currentB
+     */
+    void setColorRGB(int r, int g, int b, bool updateGlobals=false);
 
     void loopRGB();
 };
