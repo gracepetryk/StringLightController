@@ -85,6 +85,17 @@ void StringLight::selectNextColorSkippingOff(int numSkips) {
     }
 }
 
+void StringLight::loopRGB() {
+    setColor(RED);
+    delayMicroseconds(redDelay);
+
+    setColor(GREEN);
+    delayMicroseconds(greenDelay);
+
+    setColor(BLUE);
+    delayMicroseconds(blueDelay);
+}
+
 void StringLight::loopLight() {
     if (!isStarted) return;
 
@@ -95,14 +106,7 @@ void StringLight::loopLight() {
 
     switch (lightMode) {
         case MODE_SOLID:
-            setColor(RED);
-            delayMicroseconds(redDelay);
-
-            setColor(GREEN);
-            delayMicroseconds(greenDelay);
-
-            setColor(BLUE);
-            delayMicroseconds(blueDelay);
+            loopRGB();
             break;
 
         case MODE_JUMP_ASYNC:
@@ -115,14 +119,7 @@ void StringLight::loopLight() {
 
         case MODE_FADE_ASYNC:
         case MODE_FADE:
-            setColor(RED);
-            delayMicroseconds(redDelay);
-
-            setColor(GREEN);
-            delayMicroseconds(greenDelay);
-
-            setColor(BLUE);
-            delayMicroseconds(blueDelay);
+            loopRGB();
 
             if (millis() - timer > fadeSpeedMillis / 4) {
                 // each step is ~0.25 degrees on the hsv color wheel, so dividing fadeSpeedMillis / 4 gives us time per step
@@ -146,6 +143,7 @@ void StringLight::loopLight() {
                     // magenta to red
                     currentB--;
                 }
+                setColorRGB(currentR, currentG, currentB, false);
             }
         default:
             break;

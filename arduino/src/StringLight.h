@@ -148,6 +148,8 @@ private:
      * on currentR, currentG, amd currentB
      */
     void setColorRGB(int r, int g, int b, bool updateGlobals=false);
+
+    void loopRGB();
 };
 
 
