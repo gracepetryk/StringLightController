@@ -4,73 +4,131 @@
 #define BUTTON_PIN  A5
 #define DEBOUNCE_TIME 200
 
-// bytes for setting the light mode over serial, the rest of the mode definitions are set in StringLight
-#define MODE_LISTEN 0
-#define MODE_SET_COLOR 1
-#define ON_BYTE 0xFF
-#define OFF_BYTE 0xFE
-#define SET_COLOR_BYTE 0xFD
-#define GET_MODE_BYTE 0xFC
-#define GET_ON_OFF_BYTE 0xFB
+
+// bytes for controlling the lights over serial
+
+#define GET_ON_OFF_BYTE 0x04
+
+#define OFF_BYTE 0x00
+#define ON_BYTE 0x01
+
+#define SET_COLOR_BYTE 0x02
+#define GET_COLOR_BYTE 0x05
+
+#define GET_MODE_BYTE 0x03
+#define SET_MODE_BYTE 0x08
+
+#define GET_ASYNC_BYTE 0x06
+#define SET_ASYNC_BYTE 0x09
+
+#define GET_STATUS_BYTE 0x07
+
+#define GET_SPEED_BYTE 0x0A
+#define SET_SPEED_BYTE 0x0B
+
 #define ACK_BYTE 0xFF
-#define FAIL_BYTE 0xF0
+#define FAIL_BYTE 0x00
 
 bool async = false;
 StringLight stringLight = StringLight(LED_PIN);
 
+void sendColor() {
+    unsigned long color = stringLight.getColorRGB();
+    Serial.write(0xFFu & (color >> 16u)); // send red byte
+    Serial.write(0xFFu & (color >> 8u)); // send green byte
+    Serial.write(0xFFu & color); // send blue byte
+}
+
+void sendOnOff() {
+    Serial.write(stringLight.isOn() ? 0xFF : 0x00);
+}
+
+void sendMode() {
+    Serial.write(stringLight.getMode());
+}
+
+void sendAsync() {
+    Serial.write(stringLight.isAsync() ? 0xFF : 0x00);
+}
+
 /**
  * listens for serial input to control lights
  */
-byte readMode = MODE_LISTEN;
 byte colors[3];
-byte currentColor = 0;
 void controlOverSerial() {
-    if (Serial.available() > 0) {
-        byte readByte = Serial.read();
-        if (readMode == MODE_LISTEN) {
-            switch (readByte) {
-                case OFF_BYTE:
-                    stringLight.turnOff();
-                    readMode = MODE_LISTEN;
-                    Serial.write(ACK_BYTE);
-                    break;
-                case ON_BYTE:
-                    stringLight.turnOn();
-                    readMode = MODE_LISTEN;
-                    Serial.write(ACK_BYTE);
-                    break;
-                case SET_COLOR_BYTE:
-                    readMode = MODE_SET_COLOR;
-                    Serial.write(ACK_BYTE);
-                    break;
-                case GET_MODE_BYTE:
-                    // acknowledge and send the current mode over serial
-                    Serial.write(stringLight.getMode());
-                    break;
-                case GET_ON_OFF_BYTE:
-                    // acknowledge and send the current on/off state over serial
-                    Serial.write(stringLight.isOn() ? 0xFF : 0x00);
-                    break;
-                default:
-                    bool success = stringLight.setMode(readByte);
-                    Serial.write(success ? ACK_BYTE : FAIL_BYTE);
-                    break;
+    while (Serial.available() > 0) {
+        uint8_t readByte = Serial.read();
+        switch (readByte) {
+            case OFF_BYTE:
+                stringLight.turnOff();
+                Serial.write(ACK_BYTE);
+                break;
+
+            case ON_BYTE:
+                stringLight.turnOn();
+                Serial.write(ACK_BYTE);
+                break;
+
+            case SET_COLOR_BYTE: {
+                Serial.write(ACK_BYTE);
+                for (int i = 0; i <= 2; i++) {
+                    colors[i] = Serial.read();
+                    if (i == 2) {
+                        // last color
+                        stringLight.setColorRGB(colors[0], colors[1], colors[2]);
+                    }
+                }
+                break;
             }
-        } else if (readMode == MODE_SET_COLOR) {
-            // read next 3 bytes to set color
-            colors[currentColor] = readByte;
-            if (currentColor == 2) {
-                // last color
-                stringLight.setColorRGB(colors[0], colors[1], colors[2]);
-                currentColor = 0;
-                readMode = MODE_LISTEN;
-            } else {
-                currentColor++;
+            case GET_COLOR_BYTE:
+                sendColor();
+                break;
+
+            case SET_MODE_BYTE: {
+                bool success = stringLight.setMode(Serial.read());
+                Serial.write(success ? ACK_BYTE : FAIL_BYTE);
+                break;
             }
+
+            case GET_MODE_BYTE:
+                //  send the current mode over serial
+                Serial.write(stringLight.getMode());
+                break;
+
+            case GET_ON_OFF_BYTE:
+                sendOnOff();
+                break;
+
+            case GET_ASYNC_BYTE:
+                sendAsync();
+                break;
+
+            case SET_ASYNC_BYTE: {
+                readByte = Serial.read();
+                if (readByte == ON_BYTE) {
+                    stringLight.startAsync();
+                    Serial.write(ACK_BYTE);
+                } else if (readByte == OFF_BYTE) {
+                    stringLight.stopAsync();
+                    Serial.write(ACK_BYTE);
+                } else {
+                    Serial.write(FAIL_BYTE);
+                }
+                break;
+            }
+            case GET_STATUS_BYTE:
+                sendMode();
+                sendColor();
+                sendOnOff();
+                sendAsync();
+                break;
+
+            default:
+                Serial.write(FAIL_BYTE); // invalid command
+                break;
         }
     }
 }
-
 
 void setup() {
     Serial.begin(9600);

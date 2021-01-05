@@ -57,6 +57,17 @@ void StringLight::setColorRGB(int r, int g, int b, bool updateGlobals) {
     blueDelay = b * INCREMENT_TIME;
 }
 
+unsigned long StringLight::getColorRGB() const {
+    unsigned long color = 0;
+    color = color | currentR;
+    color = color << 8u;
+    color = color | currentG;
+    color = color << 8u;
+    color = color | currentB;
+
+    return color;
+}
+
 void StringLight::setColor(int color) {
     // sends the right number of pulses to switch the light to the desired color no matter what the current color is
 
@@ -109,7 +120,6 @@ void StringLight::loopLight() {
             loopRGB();
             break;
 
-        case MODE_JUMP_ASYNC:
         case MODE_JUMP:
             if (millis() - timer > jumpSpeed) {
                 timer = millis();
@@ -117,7 +127,6 @@ void StringLight::loopLight() {
             }
             break;
 
-        case MODE_FADE_ASYNC:
         case MODE_FADE:
             loopRGB();
 
@@ -199,17 +208,11 @@ bool StringLight::setMode(int id) {
         case MODE_FADE:
         case MODE_SOLID:
         case MODE_JUMP:
-            stopAsync();
-            break;
-        case MODE_FADE_ASYNC:
-        case MODE_JUMP_ASYNC:
-            startAsync();
-            break;
+            lightMode = id;
+            return true;
         default:
             return false;
     }
-    lightMode = id;
-    return true;
 }
 
 int StringLight::getMode() const {
@@ -259,6 +262,8 @@ void StringLight::setFadeSpeed(float speed) {
     fadeSpeed = speed;
     fadeSpeedMillis = (int) (1000 / speed);
 }
+
+
 
 
 

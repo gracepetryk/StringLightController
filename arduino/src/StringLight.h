@@ -21,9 +21,7 @@
 #define MODE_SOLID 0
 #define MODE_JUMP 1
 #define MODE_FADE 2
-#define MODE_JUMP_ASYNC 3
-#define MODE_FADE_ASYNC 4
-#define MODE_USER 6
+#define MODE_USER 3
 
 
 class StringLight {
@@ -43,6 +41,12 @@ public:
      * @param b
      */
     void setColorRGB(int r, int g, int b);
+
+    /**
+     * get the current RGB color of the lights
+     * @return a long representation of the color with a bit pattern of 0x00RRGGBB
+     */
+    unsigned long getColorRGB() const;
 
     /**
     * sends a pulse to the led, only works if set to mode MODE_USER
@@ -104,9 +108,9 @@ private:
 
     int currentColor = WHITE;
 
-    int currentR = 255;
-    int currentG = 255;
-    int currentB = 255;
+    byte currentR = 255;
+    byte currentG = 255;
+    byte currentB = 255;
 
     // timing delays for setting an rgb color, initialized on startup
     int redDelay = 0;
@@ -147,7 +151,7 @@ private:
      * sets the color of the lights, private function for faster updating the color in a loop when doing direct manipulation
      * on currentR, currentG, amd currentB
      */
-    void setColorRGB(int r, int g, int b, bool updateGlobals=false);
+    void setColorRGB(int r, int g, int b, bool updateGlobals);
 
     void loopRGB();
 };
