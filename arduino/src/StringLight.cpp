@@ -6,23 +6,6 @@
 
 StringLight::StringLight(int pin) {
     this->pin = pin;
-    currentColor = WHITE;
-}
-
-void StringLight::sendPulseInternal(int numPulses, int pulseTimeMicros) const {
-    for (int i = 0; i < numPulses; i++) {
-        digitalWrite(pin, LOW);
-        delayMicroseconds(pulseTimeMicros);
-        digitalWrite(pin, HIGH);
-    }
-}
-
-void StringLight::sendPulse(int numPulses, int pulseTimeMicros) const {
-    if (lightMode != MODE_USER) {
-        return;
-    }
-
-    sendPulseInternal(numPulses, pulseTimeMicros);
 }
 
 /**
@@ -30,30 +13,63 @@ void StringLight::sendPulse(int numPulses, int pulseTimeMicros) const {
  */
 void StringLight::start(bool startOn) {
     pinMode(pin, OUTPUT);
-    setColorRGB(150, 150, 150);
+    setColorRGB(currentR, currentG, currentB, false);
     startOn ? turnOn() : turnOff();
     currentColor = WHITE;
+    isStarted = true;
+}
+
+void StringLight::sendPulse(int numPulses, int pulseTimeMicros) const {
+    if (lightMode != MODE_USER || !isStarted) {
+        return;
+    }
+
+    sendPulseInternal(numPulses, pulseTimeMicros);
+}
+
+void StringLight::sendPulseInternal(int numPulses, int pulseTimeMicros) const {
+    if (!isStarted) return;
+
+    for (int i = 0; i < numPulses; i++) {
+        digitalWrite(pin, LOW);
+        delayMicroseconds(pulseTimeMicros);
+        digitalWrite(pin, HIGH);
+    }
 }
 
 void StringLight::setColorRGB(int r, int g, int b) {
-    currentR = r;
-    currentG = g;
-    currentB = b;
+    if (!isStarted) return;
+
+    setColorRGB(r, g, b, true);
+}
+
+void StringLight::setColorRGB(int r, int g, int b, bool updateGlobals) {
+    if (!isStarted) return;
+
+    if (updateGlobals) {
+        currentR = r;
+        currentG = g;
+        currentB = b;
+    }
 
     redDelay = r * INCREMENT_TIME;
     greenDelay = g * INCREMENT_TIME;
     blueDelay = b * INCREMENT_TIME;
-
 }
 
 void StringLight::setColor(int color) {
     // sends the right number of pulses to switch the light to the desired color no matter what the current color is
+
+    if (!isStarted) return;
+
     sendPulseInternal(((8 + color - currentColor) % 8));
     currentColor = color;
     digitalWrite(pin, HIGH);
 }
 
 void StringLight::selectNextColorSkippingOff(int numSkips) {
+    if (!isStarted) return;
+
     for (int i = 0; i < numSkips; i++) {
         sendPulseInternal();
         if (currentColor == WHITE) {
@@ -70,6 +86,8 @@ void StringLight::selectNextColorSkippingOff(int numSkips) {
 }
 
 void StringLight::loopLight() {
+    if (!isStarted) return;
+
     if (!lightsOn) {
         digitalWrite(pin, LOW);
         return;
@@ -106,7 +124,8 @@ void StringLight::loopLight() {
             setColor(BLUE);
             delayMicroseconds(blueDelay);
 
-            if (millis() - timer > fadeSpeed) {
+            if (millis() - timer > fadeSpeedMillis / 4) {
+                // each step is ~0.25 degrees on the hsv color wheel, so dividing fadeSpeedMillis / 4 gives us time per step
                 timer = millis();
                 if (currentR == 255 && currentG < 255 && currentB == 0) {
                     // red to yellow
@@ -134,7 +153,7 @@ void StringLight::loopLight() {
 }
 
 void StringLight::startAsync() {
-    if (isAsync()) return;
+    if (isAsync() || !isStarted) return;
 
     // send decreasing pulses to LED's, each led will start detecting pulses at slightly different pulse lengths
     for (int i = 6000; i > 100; i -= 20) {
@@ -145,7 +164,7 @@ void StringLight::startAsync() {
 }
 
 void StringLight::stopAsync() {
-    if (!isAsync()) return;
+    if (!isAsync() || !isStarted) return;
 
     digitalWrite(pin, LOW);
     delay(1000);
@@ -157,6 +176,8 @@ void StringLight::stopAsync() {
 
 
 bool StringLight::setMode(int id) {
+    if (!isStarted) return false;
+
     // reset the lights if mode is switched away from user
     if (lightMode == MODE_USER) {
         turnOff();
@@ -168,7 +189,6 @@ bool StringLight::setMode(int id) {
 
     switch (id) {
         case MODE_FADE:
-            setColorRGB(255, 0, 0);
         case MODE_SOLID:
         case MODE_JUMP:
             stopAsync();
@@ -194,6 +214,8 @@ bool StringLight::isAsync() const {
 }
 
 void StringLight::turnOff() {
+    if (!isStarted) return;
+
     if (isOn()) {
         digitalWrite(pin, LOW);
         lightsOn = false;
@@ -201,6 +223,8 @@ void StringLight::turnOff() {
 }
 
 void StringLight::turnOn() {
+    if (!isStarted) return;
+
     if (!isOn()) {
         digitalWrite(pin, HIGH);
         delay(10);
@@ -216,6 +240,19 @@ void StringLight::turnOn() {
 bool StringLight::isOn() const {
     return lightsOn;
 }
+
+float StringLight::getFadeSpeed() const {
+    return fadeSpeed;
+}
+
+void StringLight::setFadeSpeed(float speed) {
+    if (!isStarted) return;
+
+    fadeSpeed = speed;
+    fadeSpeedMillis = (int) (1000 / speed);
+}
+
+
 
 
 
