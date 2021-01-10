@@ -14,9 +14,16 @@ StringLight::StringLight(int pin) {
 void StringLight::start(bool startOn) {
     pinMode(pin, OUTPUT);
     setColorRGB(currentR, currentG, currentB, false);
-    startOn ? turnOn() : turnOff();
     currentColor = WHITE;
     isStarted = true;
+
+    if (startOn) {
+        turnOn();
+    } else {
+        turnOff();
+    }
+
+    setMode(MODE_SOLID);
 }
 
 void StringLight::sendPulse(int numPulses, int pulseTimeMicros) const {
