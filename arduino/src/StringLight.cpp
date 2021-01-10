@@ -6,6 +6,7 @@
 
 StringLight::StringLight(int pin) {
     this->pin = pin;
+    degPerUnitSpeed = ((float) (maxSpeed - minSpeed)) / 255.0f;
 }
 
 /**
@@ -14,6 +15,7 @@ StringLight::StringLight(int pin) {
 void StringLight::start(bool startOn) {
     pinMode(pin, OUTPUT);
     setColorRGB(currentR, currentG, currentB, false);
+    setSpeed(speed);
     currentColor = WHITE;
     isStarted = true;
 
@@ -45,13 +47,11 @@ void StringLight::sendPulseInternal(int numPulses, int pulseTimeMicros) const {
 }
 
 void StringLight::setColorRGB(int r, int g, int b) {
-    if (!isStarted) return;
 
     setColorRGB(r, g, b, true);
 }
 
 void StringLight::setColorRGB(int r, int g, int b, bool updateGlobals) {
-    if (!isStarted) return;
 
     if (updateGlobals) {
         currentR = r;
@@ -66,11 +66,11 @@ void StringLight::setColorRGB(int r, int g, int b, bool updateGlobals) {
 
 unsigned long StringLight::getColorRGB() const {
     unsigned long color = 0;
-    color = color | currentR;
+    color = color | (uint8_t) currentR;
     color = color << 8u;
-    color = color | currentG;
+    color = color | (uint8_t) currentG;
     color = color << 8u;
-    color = color | currentB;
+    color = color | (uint8_t)currentB;
 
     return color;
 }
@@ -85,25 +85,24 @@ void StringLight::setColor(int color) {
     digitalWrite(pin, HIGH);
 }
 
-void StringLight::selectNextColorSkippingOff(int numSkips) {
+void StringLight::selectNextColorSkippingOffAndWhite() {
     if (!isStarted) return;
 
-    for (int i = 0; i < numSkips; i++) {
+    if (isAsync()) {
         sendPulseInternal();
-        if (currentColor == WHITE) {
-            if (isAsync()) {
-                i--; // we want to count off for async
-            } else {
-                sendPulseInternal();
-                currentColor++;
-            }
+    } else {
+        if (currentColor == BLUE_GREEN) {
+            setColor(RED);
+        }  else {
+            setColor(++currentColor % 8)      ;
         }
-        currentColor++;
-        currentColor = currentColor % 8;
     }
+
 }
 
 void StringLight::loopRGB() {
+    if (!isStarted) return;
+
     setColor(RED);
     delayMicroseconds(redDelay);
 
@@ -130,45 +129,58 @@ void StringLight::loopLight() {
         case MODE_JUMP:
             if (millis() - timer > jumpSpeed) {
                 timer = millis();
-                selectNextColorSkippingOff();
+                selectNextColorSkippingOffAndWhite();
             }
             break;
 
         case MODE_FADE:
             loopRGB();
 
-            if (millis() - timer > fadeSpeedMillis / 4) {
-                // each step is ~0.25 degrees on the hsv color wheel, so dividing fadeSpeedMillis / 4 gives us time per step
+            if (millis() - timer > msPerDeg) {
+                // one degree is approximately and increment/decrement of 4
                 timer = millis();
                 if (currentR == 255 && currentG < 255 && currentB == 0) {
                     // red to yellow
-                    currentG++;
+                    currentG += 4;
                 } else if (currentR > 0 && currentG == 255 && currentB == 0) {
                     // yellow to green
-                    currentR--;
+                    currentR -= 4;
                 } else if (currentR == 0 && currentG == 255 && currentB < 255) {
                     // green to cyan
-                    currentB++;
+                    currentB += 4;
                 } else if (currentR == 0 && currentG > 0 && currentB == 255) {
                     // cyan to blue
-                    currentG--;
+                    currentG -= 4;
                 } else if (currentR < 255 && currentG == 0 && currentB == 255) {
                     //blue to magenta
-                    currentR++;
+                    currentR += 4;
                 } else if (currentR == 255 && currentG == 0 && currentB > 0) {
                     // magenta to red
-                    currentB--;
+                    currentB -= 4;
                 } else {
                     // color is not on edge of color wheel, subtract lowest color until it is
                     int lowestColor = min(currentR, min(currentG, currentB));
                     if (currentR == lowestColor) {
-                        currentR--;
+                        currentR -= 4;
                     } else if (currentG == lowestColor) {
-                        currentG--;
+                        currentG -= 4;
                     } else {
-                        currentB--;
+                        currentB -= 4;
                     }
                 }
+
+                // clamp colors to range of (0, 255)
+                int *colors[] = {&currentR, &currentG, &currentB};
+
+                for (int* color : colors) {
+                    if (*color > 255) {
+                        *color = 255;
+                    }
+                    if (*color < 0) {
+                        *color = 0;
+                    }
+                }
+
                 setColorRGB(currentR, currentG, currentB, false);
             }
         default:
@@ -208,13 +220,13 @@ bool StringLight::setMode(int id) {
         delay(1000);
         turnOn();
         currentColor = WHITE;
-        return true;
     }
 
     switch (id) {
         case MODE_FADE:
         case MODE_SOLID:
         case MODE_JUMP:
+        case MODE_USER:
             lightMode = id;
             return true;
         default:
@@ -259,21 +271,14 @@ bool StringLight::isOn() const {
     return lightsOn;
 }
 
-float StringLight::getFadeSpeed() const {
-    return fadeSpeed;
+uint8_t StringLight::getSpeed() const {
+    return speed;
 }
 
-void StringLight::setFadeSpeed(float speed) {
-    if (!isStarted) return;
+void StringLight::setSpeed(int _speed) {
+    this->speed = _speed;
 
-    fadeSpeed = speed;
-    fadeSpeedMillis = (int) (1000 / speed);
+    msPerDeg = 1000 / (minSpeed + (int) ((float) speed * degPerUnitSpeed));
+    jumpSpeed = msPerDeg * 60; // convert to ms/60 degrees (6 colors on color wheel = 60 degrees/color)
+
 }
-
-
-
-
-
-
-
-

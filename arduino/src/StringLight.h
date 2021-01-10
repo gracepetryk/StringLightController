@@ -74,7 +74,7 @@ public:
 
     bool isOn() const;
 
-    void selectNextColorSkippingOff(int numSkips = 1);
+    void selectNextColorSkippingOffAndWhite();
 
     /**
      * changes the mode of the lights.
@@ -94,9 +94,9 @@ public:
 
     bool isAsync() const;
 
-    float getFadeSpeed() const;
+    uint8_t getSpeed() const;
 
-    void setFadeSpeed(float fadeSpeed);
+    void setSpeed(int speed);
 
 private:
 
@@ -108,9 +108,9 @@ private:
 
     int currentColor = WHITE;
 
-    byte currentR = 255;
-    byte currentG = 255;
-    byte currentB = 255;
+    int currentR = 255;
+    int currentG = 255;
+    int currentB = 255;
 
     // timing delays for setting an rgb color, initialized on startup
     int redDelay = 0;
@@ -125,9 +125,17 @@ private:
      */
     unsigned long timer = 0;
 
-    int jumpSpeed = 750; // interval in ms for jump modes
-    float fadeSpeed = 10; // speed of the fade mode, expressed in degrees/sec
-    int fadeSpeedMillis = (int) (1000 / fadeSpeed); // fade speed expressed in ms/deg
+    // expressed in degrees per second
+    int minSpeed = 3;
+    int maxSpeed = 360;
+
+    uint8_t speed = 10; // control variable for speed, 0 = minSpeed, 255 = maxSpeed
+
+    float degPerUnitSpeed; // number of degrees represented by a speed increase of one
+
+    int jumpSpeed = 0; // interval in ms for jump modes
+
+    int msPerDeg = 0; // fade speed expressed in ms/deg
 
     bool async = false;
 

@@ -8,7 +8,6 @@
 // bytes for controlling the lights over serial
 
 #define GET_ON_OFF_BYTE 0x04
-
 #define OFF_BYTE 0x00
 #define ON_BYTE 0x01
 
@@ -51,6 +50,10 @@ void sendAsync() {
     Serial.write(stringLight.isAsync() ? 0xFF : 0x00);
 }
 
+void sendSpeed() {
+    Serial.write(stringLight.getSpeed());
+}
+
 /**
  * listens for serial input to control lights
  */
@@ -59,6 +62,10 @@ void controlOverSerial() {
     while (Serial.available() > 0) {
         uint8_t readByte = Serial.read();
         switch (readByte) {
+            case GET_ON_OFF_BYTE:
+                sendOnOff();
+                break;
+
             case OFF_BYTE:
                 stringLight.turnOff();
                 Serial.write(ACK_BYTE);
@@ -95,34 +102,41 @@ void controlOverSerial() {
                 Serial.write(stringLight.getMode());
                 break;
 
-            case GET_ON_OFF_BYTE:
-                sendOnOff();
-                break;
-
             case GET_ASYNC_BYTE:
                 sendAsync();
                 break;
 
             case SET_ASYNC_BYTE: {
                 readByte = Serial.read();
-                if (readByte == ON_BYTE) {
-                    stringLight.startAsync();
-                    Serial.write(ACK_BYTE);
-                } else if (readByte == OFF_BYTE) {
-                    stringLight.stopAsync();
-                    Serial.write(ACK_BYTE);
-                } else {
-                    Serial.write(FAIL_BYTE);
+                switch (readByte) {
+                    case ON_BYTE:
+                        stringLight.startAsync();
+                        Serial.write(ACK_BYTE);
+                    case OFF_BYTE:
+                        stringLight.stopAsync();
+                        Serial.write(ACK_BYTE);
+                    default:
+                        Serial.write(FAIL_BYTE);
                 }
+
                 break;
             }
+            case GET_SPEED_BYTE:
+                sendSpeed();
+                break;
+
+            case SET_SPEED_BYTE:
+                stringLight.setSpeed(Serial.read());
+                Serial.write(ACK_BYTE);
+                break;
+
             case GET_STATUS_BYTE:
                 sendMode();
                 sendColor();
                 sendOnOff();
                 sendAsync();
+                sendSpeed();
                 break;
-
             default:
                 Serial.write(FAIL_BYTE); // invalid command
                 break;

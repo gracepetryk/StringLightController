@@ -57,6 +57,6 @@ def mode_fade_async():
 
 @app.route("/mode_jump_async")
 def mode_jump_async():
-    lc.set_mode(lc.MODE_JUMP_ASYNC_BYTE)
+    lc.set_mode()
     return Response("Set mode to async jump", status=200)
 
