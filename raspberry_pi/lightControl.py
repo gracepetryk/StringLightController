@@ -73,6 +73,7 @@ class LightControl:
     VALID_COMMAND_BYTES = (
         SET_COLOR_BYTE,
         GET_MODE_BYTE,
+        SET_MODE_BYTE,
         GET_STATUS_BYTE,
         GET_ON_OFF_BYTE,
         MODE_SOLID_BYTE,
