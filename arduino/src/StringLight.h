@@ -104,7 +104,7 @@ private:
 
     const static int INCREMENT_TIME = 25; // amount of delay per color in milliseconds
 
-    bool lightsOn = true;
+    bool lightsOn = false;
 
     int currentColor = WHITE;
 
@@ -127,7 +127,7 @@ private:
 
     // expressed in degrees per second
     int minSpeed = 3;
-    int maxSpeed = 360;
+    int maxSpeed = 180;
 
     uint8_t speed = 10; // control variable for speed, 0 = minSpeed, 255 = maxSpeed
 

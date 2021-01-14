@@ -147,7 +147,7 @@ void controlOverSerial() {
 void setup() {
     Serial.begin(9600);
     pinMode(BUTTON_PIN, INPUT_PULLUP);
-    stringLight.start(false);
+    stringLight.start(true);
     stringLight.setMode(MODE_FADE);
 }
 
@@ -173,9 +173,4 @@ void loop() {
         }
     }
 }
-
-
-
-
-
 
