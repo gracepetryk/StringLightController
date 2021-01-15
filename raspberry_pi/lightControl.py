@@ -81,19 +81,29 @@ class LightControl:
         MODE_FADE_BYTE,
         MODE_USER_BYTE,
         GET_SPEED_BYTE,
-        SET_SPEED_BYTE
+        SET_SPEED_BYTE,
+        GET_ASYNC_BYTE,
+        SET_ASYNC_BYTE
     )
     
     def __init__(self):
         # find arduino serial port
         dev_list = subprocess.run(["ls", "/dev"], capture_output=True)
         dev_list = str(dev_list.stdout).split("\\n")
-        serial_port = "/dev/" + [res for res in dev_list if "ttyUSB" in res][0]
+        self.serial_port = "/dev/" + [res for res in dev_list if "ttyUSB" in res][0]
 
         # open serial port and define command object
-        self.ser = serial.Serial(serial_port, 9600)
+        self.ser = serial.Serial(self.serial_port, 19200)
+        self._retry_count = 0
 
-    def _send_command(self, command: Union[bytes, int]) -> bytes:
+    def __del__(self):
+        self.ser.close()
+
+    def retry_connection(self):
+        self.ser.close()
+        self.ser = serial.Serial(self.serial_port, 19200)
+
+    def _send_command(self, command: Union[bytes, int], max_retries=3, timeout_ms=20) -> bytes:
         self.ser.reset_input_buffer()
         self.ser.reset_input_buffer()
 
@@ -106,24 +116,27 @@ class LightControl:
         self.ser.reset_input_buffer()
         self.ser.write(command)
 
-        time.sleep(50/1000)  # wait 50ms for response
-
+        time.sleep(timeout_ms / 1000)  # wait 20ms for response
         res = bytearray()
         while self.ser.in_waiting > 0:
             res.append(self.ser.read()[0])
 
-        if (len(res) == 1 and res[0] == self.FAIL_BYTE) or len(res) == 0:
+        if len(res) == 1 and res[0] == self.FAIL_BYTE:
             raise LightControlSerialException("Arduino could not process command")
+        elif len(res) == 0 or res[0] != self.ACK_BYTE:
+            if max_retries > 0:
+                print("Command {:#x} timed out or had bad response, retrying...".format(command[0]))
+                self.retry_connection()
+                return self._send_command(command, max_retries=max_retries - 1)
+            else:
+                raise LightControlSerialException("Arduino timed out after 3 retries")
+
+        res = res[1:]  # strip ack byte from response
 
         return bytes(res)
 
     def get_status(self) -> LightControlStatus:
         status_bytes = self._send_command(LightControl.GET_STATUS_BYTE)
-        hex_str = status_bytes.hex()
-
-        # bytes.hex() isn't working with arguments for some reason
-        print(":".join([h1 + h2 for h1, h2 in zip(hex_str[::2], hex_str[1::2])]))
-        print(status_bytes[4])
         return LightControlStatus(status_bytes[0],
                                   bytes(status_bytes[1:4]),
                                   status_bytes[4] == 255,
@@ -141,7 +154,6 @@ class LightControl:
         self._send_command(LightControl.OFF_BYTE)
 
     def set_color(self, r, g, b):
-        self.set_mode(LightControl.MODE_SOLID_BYTE)
         command = bytes([LightControl.SET_COLOR_BYTE, r, g, b])
         self._send_command(command)
 
@@ -150,6 +162,9 @@ class LightControl:
             raise ValueError("Speed must be between 0 and 255")
 
         self._send_command(bytes([LightControl.SET_SPEED_BYTE, speed]))
+
+    def set_async(self, async_on: bool):
+        self._send_command(bytes([self.SET_ASYNC_BYTE, self.ON_BYTE if async_on else self.OFF_BYTE]))
 
 
 if __name__ == "__main__":

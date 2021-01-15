@@ -28,6 +28,11 @@
 #define ACK_BYTE 0xFF
 #define FAIL_BYTE 0x00
 
+#define TIMEOUT_MS 1000
+
+#define WAITING_FOR_INPUT 0
+#define WAITING_FOR_COLOR 1
+
 bool async = false;
 StringLight stringLight = StringLight(LED_PIN);
 
@@ -57,95 +62,136 @@ void sendSpeed() {
 /**
  * listens for serial input to control lights
  */
-byte colors[3];
 void controlOverSerial() {
-    while (Serial.available() > 0) {
-        uint8_t readByte = Serial.read();
-        switch (readByte) {
-            case GET_ON_OFF_BYTE:
-                sendOnOff();
-                break;
+    static uint8_t read_mode = WAITING_FOR_INPUT;
+    static uint8_t timeout_start = millis();
+    if (read_mode == WAITING_FOR_INPUT) {
+        timeout_start = millis();
+        if (Serial.available() > 0) {
+            uint8_t readByte = Serial.read();
+            switch (readByte) {
+                case GET_ON_OFF_BYTE:
+                    sendOnOff();
+                    break;
 
-            case OFF_BYTE:
-                stringLight.turnOff();
-                Serial.write(ACK_BYTE);
-                break;
+                case OFF_BYTE:
+                    Serial.write(ACK_BYTE);
+                    stringLight.turnOff();
+                    break;
 
-            case ON_BYTE:
-                stringLight.turnOn();
-                Serial.write(ACK_BYTE);
-                break;
+                case ON_BYTE:
+                    Serial.write(ACK_BYTE);
+                    stringLight.turnOn();
+                    break;
 
-            case SET_COLOR_BYTE: {
-                Serial.write(ACK_BYTE);
-                for (int i = 0; i <= 2; i++) {
-                    colors[i] = Serial.read();
-                    if (i == 2) {
-                        // last color
-                        stringLight.setColorRGB(colors[0], colors[1], colors[2]);
+                case SET_COLOR_BYTE: {
+                    read_mode = WAITING_FOR_COLOR;
+                    Serial.write(ACK_BYTE);
+
+                    break;
+                }
+                case GET_COLOR_BYTE:
+                    sendColor();
+                    break;
+
+                case SET_MODE_BYTE: {
+                    while (Serial.available() == 0) {
+                        delayMicroseconds(100);
+                        if (millis() - timeout_start > TIMEOUT_MS) {
+                            Serial.write(FAIL_BYTE);
+                            Serial.flush();
+                            return;
+                        }
                     }
-                }
-                break;
-            }
-            case GET_COLOR_BYTE:
-                sendColor();
-                break;
-
-            case SET_MODE_BYTE: {
-                bool success = stringLight.setMode(Serial.read());
-                Serial.write(success ? ACK_BYTE : FAIL_BYTE);
-                break;
-            }
-
-            case GET_MODE_BYTE:
-                //  send the current mode over serial
-                Serial.write(stringLight.getMode());
-                break;
-
-            case GET_ASYNC_BYTE:
-                sendAsync();
-                break;
-
-            case SET_ASYNC_BYTE: {
-                readByte = Serial.read();
-                switch (readByte) {
-                    case ON_BYTE:
-                        stringLight.startAsync();
-                        Serial.write(ACK_BYTE);
-                    case OFF_BYTE:
-                        stringLight.stopAsync();
-                        Serial.write(ACK_BYTE);
-                    default:
-                        Serial.write(FAIL_BYTE);
+                    bool success = stringLight.setMode(Serial.read());
+                    Serial.write(success ? ACK_BYTE : FAIL_BYTE);
+                    break;
                 }
 
-                break;
+                case GET_MODE_BYTE:
+                    Serial.write(ACK_BYTE);
+                    Serial.write(stringLight.getMode());
+                    break;
+
+                case GET_ASYNC_BYTE:
+                    Serial.write(ACK_BYTE);
+                    sendAsync();
+                    break;
+
+                case SET_ASYNC_BYTE: {
+                    while (Serial.available() == 0) {
+                        delayMicroseconds(100);
+                        if (millis() - timeout_start > TIMEOUT_MS) {
+                            Serial.write(FAIL_BYTE);
+                            Serial.flush();
+                            return;
+                        }
+                    }
+                    readByte = Serial.read();
+                    switch (readByte) {
+                        case ON_BYTE:
+                            Serial.write(ACK_BYTE);
+                            stringLight.startAsync();
+                            break;
+                        case OFF_BYTE:
+                            Serial.write(ACK_BYTE);
+                            stringLight.stopAsync();
+                            break;
+                        default:
+                            Serial.write(FAIL_BYTE);
+                            break;
+                    }
+
+                    break;
+                }
+                case GET_SPEED_BYTE:
+                    sendSpeed();
+                    break;
+
+                case SET_SPEED_BYTE:
+                    Serial.write(ACK_BYTE);
+                    stringLight.setSpeed(Serial.read());
+                    break;
+
+                case GET_STATUS_BYTE:
+                    Serial.write(ACK_BYTE);
+                    sendMode();
+                    sendColor();
+                    sendOnOff();
+                    sendAsync();
+                    sendSpeed();
+                    break;
+                default:
+                    Serial.write(FAIL_BYTE); // invalid command
+                    break;
             }
-            case GET_SPEED_BYTE:
-                sendSpeed();
-                break;
+        }
+    } else if (read_mode == WAITING_FOR_COLOR) {
+        static int i = 0;
+        static uint8_t colors[3];
+        if (Serial.available() != 0) {
+            timeout_start = millis();
+            colors[i] = Serial.read();
+            if (i == 2) {
+                stringLight.setColorRGB(colors[0], colors[1], colors[2]);
+                i = 0;
+                read_mode = WAITING_FOR_INPUT;
+            } else {
+                i++;
+            }
 
-            case SET_SPEED_BYTE:
-                stringLight.setSpeed(Serial.read());
-                Serial.write(ACK_BYTE);
-                break;
-
-            case GET_STATUS_BYTE:
-                sendMode();
-                sendColor();
-                sendOnOff();
-                sendAsync();
-                sendSpeed();
-                break;
-            default:
-                Serial.write(FAIL_BYTE); // invalid command
-                break;
+        } else {
+            if (millis() - timeout_start > TIMEOUT_MS) {
+                Serial.write(FAIL_BYTE);
+                read_mode = WAITING_FOR_INPUT;
+                timeout_start = millis();
+            }
         }
     }
 }
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(19200);
     pinMode(BUTTON_PIN, INPUT_PULLUP);
     stringLight.start(true);
     stringLight.setMode(MODE_FADE);

@@ -4,9 +4,8 @@
 
 #include "StringLight.h"
 
-StringLight::StringLight(int pin) {
+StringLight::StringLight(uint8_t pin) {
     this->pin = pin;
-    degPerUnitSpeed = ((float) (maxSpeed - minSpeed)) / 255.0f;
 }
 
 /**
@@ -27,7 +26,7 @@ void StringLight::start(bool startOn) {
 
 }
 
-void StringLight::sendPulse(int numPulses, int pulseTimeMicros) const {
+void StringLight::sendPulse(uint8_t numPulses, int pulseTimeMicros) const {
     if (lightMode != MODE_USER || !isStarted) {
         return;
     }
@@ -35,7 +34,7 @@ void StringLight::sendPulse(int numPulses, int pulseTimeMicros) const {
     sendPulseInternal(numPulses, pulseTimeMicros);
 }
 
-void StringLight::sendPulseInternal(int numPulses, int pulseTimeMicros) const {
+void StringLight::sendPulseInternal(uint8_t numPulses, int pulseTimeMicros) const {
     if (!isStarted) return;
 
     for (int i = 0; i < numPulses; i++) {
@@ -45,12 +44,12 @@ void StringLight::sendPulseInternal(int numPulses, int pulseTimeMicros) const {
     }
 }
 
-void StringLight::setColorRGB(int r, int g, int b) {
+void StringLight::setColorRGB(uint8_t r, uint8_t g, uint8_t b) {
 
     setColorRGB(r, g, b, true);
 }
 
-void StringLight::setColorRGB(int r, int g, int b, bool updateGlobals) {
+void StringLight::setColorRGB(uint8_t r, uint8_t g, uint8_t b, bool updateGlobals) {
 
     if (updateGlobals) {
         currentR = r;
@@ -74,7 +73,7 @@ unsigned long StringLight::getColorRGB() const {
     return color;
 }
 
-void StringLight::setColor(int color) {
+void StringLight::setColor(uint8_t color) {
     // sends the right number of pulses to switch the light to the desired color no matter what the current color is
 
     if (!isStarted) return;
@@ -90,10 +89,12 @@ void StringLight::selectNextColorSkippingOffAndWhite() {
     if (isAsync()) {
         sendPulseInternal();
     } else {
-        if (currentColor == BLUE_GREEN) {
+
+        uint8_t nextColor = (currentColor + 1) % 8;
+        if (nextColor == WHITE) {
             setColor(RED);
         }  else {
-            setColor(++currentColor % 8)      ;
+            setColor(nextColor);
         }
     }
 
@@ -120,50 +121,79 @@ void StringLight::loopLight() {
         return;
     }
 
+    static unsigned int timer = 0;
+
+
     switch (lightMode) {
         case MODE_SOLID:
             loopRGB();
             break;
 
-        case MODE_JUMP:
-            if (millis() - timer > jumpSpeed) {
+        case MODE_JUMP: {
+            loopRGB();
+            unsigned int timeSinceLastCycle = millis() - timer;
+            unsigned int jumpSpeed = msPerDeg * 60;
+            static size_t currentColor = 0;
+            if (timeSinceLastCycle > jumpSpeed) {
                 timer = millis();
-                selectNextColorSkippingOffAndWhite();
+                setColorRGB(loopColors[currentColor][0], loopColors[currentColor][1], loopColors[currentColor][2]);
+                currentColor = (currentColor + 1) % (sizeof(loopColors) / sizeof(loopColors[0]));
             }
             break;
-
-        case MODE_FADE:
+        }
+        case MODE_FADE: {
             loopRGB();
 
-            if (millis() - timer > msPerDeg / 2) {
-                // one degree is approximately and increment/decrement of 2
+            unsigned int timeSinceLastCycle = millis() - timer;
+            if (timeSinceLastCycle >= 50) {
+
+                uint8_t fadeIncrement = 4 * (timeSinceLastCycle / msPerDeg);
+                fadeIncrement = max(1, fadeIncrement);
+
+
+                uint8_t maxColor = 255;
+                uint8_t minColor = 0;
+
                 timer = millis();
-                if (currentR == 255 && currentG < 255 && currentB == 0) {
+
+                if (currentR >= maxColor && currentG < maxColor && currentB <= minColor) {
                     // red to yellow
-                    currentG += 2;
-                } else if (currentR > 0 && currentG == 255 && currentB == 0) {                   // yellow to green
-                    currentR -= 2;
-                } else if (currentR == 0 && currentG == 255 && currentB < 255) {
+                    currentG += fadeIncrement;
+                } else if (currentR > minColor && currentG >= maxColor && currentB <= minColor) {
+                    // yellow to green
+                    currentR -= fadeIncrement;
+                } else if (currentR <= minColor && currentG >= maxColor && currentB < maxColor) {
                     // green to cyan
-                    currentB += 2;
-                } else if (currentR == 0 && currentG > 0 && currentB == 255) {
+                    currentB += fadeIncrement;
+                } else if (currentR <= minColor && currentG > minColor && currentB >= maxColor) {
                     // cyan to blue
-                    currentG -= 2;
-                } else if (currentR < 255 && currentG == 0 && currentB == 255) {
+                    currentG -= fadeIncrement;
+                } else if (currentR < maxColor && currentG <= minColor && currentB >= maxColor) {
                     //blue to magenta
-                    currentR += 2;
-                } else if (currentR == 255 && currentG == 0 && currentB > 0) {
+                    currentR += fadeIncrement;
+                } else if (currentR >= maxColor && currentG <= minColor && currentB > minColor) {
                     // magenta to red
-                    currentB -= 2;
+                    currentB -= fadeIncrement;
                 } else {
-                    // color is not on edge of color wheel, subtract lowest color until it is
+                    // color is not on edge of color wheel, subtract lowest color and add highest until it is
                     int lowestColor = min(currentR, min(currentG, currentB));
                     if (currentR == lowestColor) {
-                        currentR -= 2;
+                        currentR -= fadeIncrement;
                     } else if (currentG == lowestColor) {
-                        currentG -= 2;
+                        currentG -= fadeIncrement;
                     } else {
-                        currentB -= 2;
+                        currentB -= fadeIncrement;
+                    }
+
+
+                    int highestColor = max(currentR, max(currentG, currentB));
+
+                    if (currentR == highestColor) {
+                        currentR += fadeIncrement;
+                    } else if (currentG == highestColor) {
+                        currentG += fadeIncrement;
+                    } else {
+                        currentB += fadeIncrement;
                     }
                 }
 
@@ -181,6 +211,7 @@ void StringLight::loopLight() {
 
                 setColorRGB(currentR, currentG, currentB, false);
             }
+        }
         default:
             break;
     }
@@ -209,7 +240,7 @@ void StringLight::stopAsync() {
 }
 
 
-bool StringLight::setMode(int id) {
+bool StringLight::setMode(uint8_t id) {
     if (!isStarted) return false;
 
     // reset the lights if mode is switched away from user
@@ -221,9 +252,10 @@ bool StringLight::setMode(int id) {
     }
 
     switch (id) {
+        case MODE_JUMP:
+            setColor(RED);
         case MODE_FADE:
         case MODE_SOLID:
-        case MODE_JUMP:
         case MODE_USER:
             lightMode = id;
             return true;
@@ -273,10 +305,8 @@ uint8_t StringLight::getSpeed() const {
     return speed;
 }
 
-void StringLight::setSpeed(int _speed) {
+void StringLight::setSpeed(uint8_t _speed) {
     this->speed = _speed;
 
-    msPerDeg = 1000 / (minSpeed + (int) ((float) speed * degPerUnitSpeed));
-    jumpSpeed = msPerDeg * 60; // convert to ms/60 degrees (6 colors on color wheel = 60 degrees/color)
-
+    msPerDeg = 1000 / (minSpeed + (uint8_t) ((float) speed * degPerSecondPerUnitSpeed));
 }

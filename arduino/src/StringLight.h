@@ -17,6 +17,7 @@
 #define RED_BLUE 6
 #define BLUE_GREEN 7
 
+
 // light mode definitions
 #define MODE_SOLID 0
 #define MODE_JUMP 1
@@ -26,7 +27,7 @@
 
 class StringLight {
 public:
-    explicit StringLight(int pin);
+    explicit StringLight(uint8_t pin);
 
     /**
      * Initialize the lights, must be called in setup() before lights will function
@@ -40,7 +41,7 @@ public:
      * @param g
      * @param b
      */
-    void setColorRGB(int r, int g, int b);
+    void setColorRGB(uint8_t r, uint8_t g, uint8_t b);
 
     /**
      * get the current RGB color of the lights
@@ -51,7 +52,7 @@ public:
     /**
     * sends a pulse to the led, only works if set to mode MODE_USER
     */
-    void sendPulse(int numPulses=1, int pulseTimeMicros=5) const;
+    void sendPulse(uint8_t numPulses=1, int pulseTimeMicros=5) const;
 
     /**
      * include this function in loop() to maintain light functionality
@@ -88,7 +89,7 @@ public:
      * @id MODE_JUMP_ASYNC: same as MODE_JUMP but each light is a different color
      * @id MODE_FADE_ASYNC: same as MODE_FADE but each light is a different color
      */
-    bool setMode(int id);
+    bool setMode(uint8_t id);
 
     int getMode() const;
 
@@ -96,17 +97,17 @@ public:
 
     uint8_t getSpeed() const;
 
-    void setSpeed(int speed);
+    void setSpeed(uint8_t speed);
 
 private:
 
-    int pin;
+    uint8_t pin;
 
-    const static int INCREMENT_TIME = 25; // amount of delay per color in milliseconds
+    const static uint8_t INCREMENT_TIME = 25; // amount of delay per color in microseconds
 
     bool lightsOn = false;
 
-    int currentColor = WHITE;
+    uint8_t currentColor = WHITE;
 
     int currentR = 255;
     int currentG = 255;
@@ -120,31 +121,33 @@ private:
     // keeps track of initialization state of lights
     bool isStarted = false;
 
-    /**
-     * used for timing operations for certain light modes, reset frequently
-     */
-    unsigned long timer = 0;
-
     // expressed in degrees per second
     int minSpeed = 3;
     int maxSpeed = 180;
 
-    uint8_t speed = 10; // control variable for speed, 0 = minSpeed, 255 = maxSpeed
+    uint8_t speed = 50; // control variable for speed, 0 = minSpeed, 255 = maxSpeed
 
-    float degPerUnitSpeed; // number of degrees represented by a speed increase of one
+    const float degPerSecondPerUnitSpeed = ((float) (maxSpeed - minSpeed)) / 255.0f; // number of degrees represented by a speed increase of one
+    uint8_t msPerDeg = 0; // fade speed expressed in ms/deg
 
-    int jumpSpeed = 0; // interval in ms for jump modes
 
-    int msPerDeg = 0; // fade speed expressed in ms/deg
+    uint8_t loopColors[6][3] = {
+            {255, 0, 0},
+            {255, 255, 0},
+            {0, 255, 0},
+            {0, 255, 255},
+            {0, 0, 255},
+            {255, 0, 255}
+    };
 
     bool async = false;
 
-    int lightMode = MODE_SOLID;
+    uint8_t lightMode = MODE_SOLID;
 
     /**
      * sends pulses until light is set to color specified
      */
-     void setColor(int color);
+     void setColor(uint8_t color);
 
 
     /**
@@ -152,14 +155,14 @@ private:
     * send pulses to the LEDs without setting the proper mode first. This ensures that we can always keep track of
     * what the current color is
     */
-    void sendPulseInternal(int numPulses=1, int pulseTimeMicros=50) const;
+    void sendPulseInternal(uint8_t numPulses=1, int pulseTimeMicros=50) const;
 
 
     /**
      * sets the color of the lights, private function for faster updating the color in a loop when doing direct manipulation
      * on currentR, currentG, amd currentB
      */
-    void setColorRGB(int r, int g, int b, bool updateGlobals);
+    void setColorRGB(uint8_t r, uint8_t g, uint8_t b, bool updateGlobals);
 
     void loopRGB();
 };
