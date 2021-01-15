@@ -135,36 +135,35 @@ void StringLight::loopLight() {
         case MODE_FADE:
             loopRGB();
 
-            if (millis() - timer > msPerDeg) {
-                // one degree is approximately and increment/decrement of 4
+            if (millis() - timer > msPerDeg / 2) {
+                // one degree is approximately and increment/decrement of 2
                 timer = millis();
                 if (currentR == 255 && currentG < 255 && currentB == 0) {
                     // red to yellow
-                    currentG += 4;
-                } else if (currentR > 0 && currentG == 255 && currentB == 0) {
-                    // yellow to green
-                    currentR -= 4;
+                    currentG += 2;
+                } else if (currentR > 0 && currentG == 255 && currentB == 0) {                   // yellow to green
+                    currentR -= 2;
                 } else if (currentR == 0 && currentG == 255 && currentB < 255) {
                     // green to cyan
-                    currentB += 4;
+                    currentB += 2;
                 } else if (currentR == 0 && currentG > 0 && currentB == 255) {
                     // cyan to blue
-                    currentG -= 4;
+                    currentG -= 2;
                 } else if (currentR < 255 && currentG == 0 && currentB == 255) {
                     //blue to magenta
-                    currentR += 4;
+                    currentR += 2;
                 } else if (currentR == 255 && currentG == 0 && currentB > 0) {
                     // magenta to red
-                    currentB -= 4;
+                    currentB -= 2;
                 } else {
                     // color is not on edge of color wheel, subtract lowest color until it is
                     int lowestColor = min(currentR, min(currentG, currentB));
                     if (currentR == lowestColor) {
-                        currentR -= 4;
+                        currentR -= 2;
                     } else if (currentG == lowestColor) {
-                        currentG -= 4;
+                        currentG -= 2;
                     } else {
-                        currentB -= 4;
+                        currentB -= 2;
                     }
                 }
 
